@@ -17,12 +17,19 @@ set(PROJECT_SOURCES
         mainwindow.cpp
         mainwindow.h
         mainwindow.ui
+        resources/resources.qrc
 )
+
+# Windows icon resource
+if(WIN32)
+    set(APP_ICON_RESOURCE "${CMAKE_CURRENT_SOURCE_DIR}/resources/app.rc")
+endif()
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(clipboard-manager
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
+        ${APP_ICON_RESOURCE}
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET clipboard-manager APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR

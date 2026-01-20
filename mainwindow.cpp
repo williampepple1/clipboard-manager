@@ -7,6 +7,7 @@
 #include <QMessageBox>
 #include <QStyle>
 #include <QScreen>
+#include <QIcon>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -17,6 +18,11 @@ MainWindow::MainWindow(QWidget *parent)
     
     setWindowTitle("Clipboard History Manager");
     setMinimumSize(450, 550);
+    
+    // Set application icon
+    QIcon appIcon(":/app_icon.png");
+    setWindowIcon(appIcon);
+    qApp->setWindowIcon(appIcon);
     
     // Get clipboard instance
     clipboard = QApplication::clipboard();
@@ -200,7 +206,7 @@ void MainWindow::setupUI()
 void MainWindow::setupSystemTray()
 {
     trayIcon = new QSystemTrayIcon(this);
-    trayIcon->setIcon(style()->standardIcon(QStyle::SP_FileDialogListView));
+    trayIcon->setIcon(QIcon(":/app_icon.png"));
     trayIcon->setToolTip("Clipboard History Manager");
     
     QMenu *trayMenu = new QMenu(this);

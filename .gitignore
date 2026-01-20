@@ -2,6 +2,14 @@
 build/
 dist/
 
+# Installer output
+ClipboardManager-Setup.exe
+ClipboardManager-Setup.zip
+
+# Python cache
+__pycache__/
+*.pyc
+
 # Qt generated files
 *_autogen/
 moc_*.cpp
