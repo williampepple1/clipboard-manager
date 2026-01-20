@@ -1,5 +1,5 @@
 """Generate a clipboard icon for the app."""
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw  # type: ignore  # pylint: disable=import-error
 
 def create_clipboard_icon(size):
     """Create a clipboard icon at the specified size."""
