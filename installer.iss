@@ -2,7 +2,7 @@
 ; Generated for Inno Setup 6
 
 #define MyAppName "Clipboard Manager"
-#define MyAppVersion "1.0"
+#define MyAppVersion "2.0"
 #define MyAppPublisher "Clipboard Manager"
 #define MyAppExeName "clipboard-manager.exe"
 #define MyAppIcon "resources\app_icon.ico"
@@ -16,7 +16,7 @@ DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
 OutputDir=.
-OutputBaseFilename=ClipboardManager-Setup
+OutputBaseFilename=ClipboardManager-v{#MyAppVersion}-Setup
 SetupIconFile={#MyAppIcon}
 Compression=lzma2/ultra64
 SolidCompression=yes

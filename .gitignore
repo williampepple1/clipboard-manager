@@ -21,7 +21,7 @@ Makefile
 # Compiled files
 *.o
 *.obj
-*.exe
+# *.exe
 *.dll
 
 # IDE files

@@ -9,20 +9,23 @@ A lightweight Windows clipboard history manager built with Qt6. Stores up to 50 
 ## Features
 
 - **50-Item History** – Automatically stores up to 50 clipboard entries
+- **Persistent Storage** – History survives restarts; saved to AppData as JSON
 - **Stack Behavior** – Newest items appear at the top; oldest are removed when limit is reached
 - **Text & Image Support** – Tracks both text snippets and copied images
 - **Duplicate Prevention** – Won't add the same content twice in a row
-- **System Tray Integration** – Runs quietly in the background
+- **Always Running** – Runs in background even when window is closed; only Task Manager can stop it
+- **System Tray Integration** – Lives quietly in your system tray
 - **One-Click Restore** – Double-click any item to copy it back to clipboard
 - **Timestamps** – See exactly when each item was copied
+- **Auto-Save** – History is saved every 5 seconds and on window close
 - **No Installation Required** – Portable version available
 
 ## Download
 
 | File | Description |
 |------|-------------|
-| `ClipboardManager-Setup.exe` | Windows installer (~13 MB) |
-| `ClipboardManager-Setup.zip` | Portable version - extract and run (~16 MB) |
+| `ClipboardManager-v2.0-Setup.exe` | Windows installer (~13 MB) |
+| `ClipboardManager-v2.0-Portable.zip` | Portable version - extract and run (~16 MB) |
 
 ## Usage
 

@@ -8,11 +8,19 @@
 #include <QStyle>
 #include <QScreen>
 #include <QIcon>
+#include <QJsonDocument>
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QFile>
+#include <QDir>
+#include <QStandardPaths>
+#include <QBuffer>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
     , ignoreNextChange(false)
+    , historyModified(false)
 {
     ui->setupUi(this);
     
@@ -30,6 +38,14 @@ MainWindow::MainWindow(QWidget *parent)
     setupUI();
     setupSystemTray();
     
+    // Load saved history
+    loadHistory();
+    
+    // Setup auto-save timer (save every 5 seconds if modified)
+    saveTimer = new QTimer(this);
+    connect(saveTimer, &QTimer::timeout, this, &MainWindow::saveHistory);
+    saveTimer->start(5000);
+    
     // Connect clipboard change signal
     connect(clipboard, &QClipboard::dataChanged, this, &MainWindow::onClipboardChanged);
     
@@ -46,7 +62,103 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    // Save history before exit
+    saveHistory();
     delete ui;
+}
+
+QString MainWindow::getDataFilePath()
+{
+    QString dataDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    QDir().mkpath(dataDir);
+    return dataDir + "/clipboard_history.json";
+}
+
+QString MainWindow::getImageStoragePath()
+{
+    QString dataDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    QString imageDir = dataDir + "/images";
+    QDir().mkpath(imageDir);
+    return imageDir;
+}
+
+void MainWindow::loadHistory()
+{
+    QString filePath = getDataFilePath();
+    QFile file(filePath);
+    
+    if (!file.open(QIODevice::ReadOnly)) {
+        return; // No saved history yet
+    }
+    
+    QByteArray data = file.readAll();
+    file.close();
+    
+    QJsonDocument doc = QJsonDocument::fromJson(data);
+    if (!doc.isArray()) {
+        return;
+    }
+    
+    QJsonArray array = doc.array();
+    QString imageDir = getImageStoragePath();
+    
+    for (const QJsonValue &val : array) {
+        QJsonObject obj = val.toObject();
+        
+        ClipboardItem item;
+        item.content = obj["content"].toString();
+        item.timestamp = QDateTime::fromString(obj["timestamp"].toString(), Qt::ISODate);
+        item.isImage = obj["isImage"].toBool();
+        
+        if (item.isImage) {
+            QString imagePath = imageDir + "/" + obj["imageFile"].toString();
+            item.imageData = QPixmap(imagePath);
+        }
+        
+        history.push_back(item);
+    }
+    
+    updateHistoryDisplay();
+}
+
+void MainWindow::saveHistory()
+{
+    if (!historyModified) {
+        return;
+    }
+    
+    QString filePath = getDataFilePath();
+    QString imageDir = getImageStoragePath();
+    
+    QJsonArray array;
+    int imageIndex = 0;
+    
+    for (const ClipboardItem &item : history) {
+        QJsonObject obj;
+        obj["content"] = item.content;
+        obj["timestamp"] = item.timestamp.toString(Qt::ISODate);
+        obj["isImage"] = item.isImage;
+        
+        if (item.isImage && !item.imageData.isNull()) {
+            QString imageName = QString("img_%1_%2.png")
+                .arg(item.timestamp.toMSecsSinceEpoch())
+                .arg(imageIndex++);
+            QString imagePath = imageDir + "/" + imageName;
+            item.imageData.save(imagePath, "PNG");
+            obj["imageFile"] = imageName;
+        }
+        
+        array.append(obj);
+    }
+    
+    QJsonDocument doc(array);
+    QFile file(filePath);
+    
+    if (file.open(QIODevice::WriteOnly)) {
+        file.write(doc.toJson(QJsonDocument::Compact));
+        file.close();
+        historyModified = false;
+    }
 }
 
 void MainWindow::setupUI()
@@ -207,7 +319,7 @@ void MainWindow::setupSystemTray()
 {
     trayIcon = new QSystemTrayIcon(this);
     trayIcon->setIcon(QIcon(":/app_icon.png"));
-    trayIcon->setToolTip("Clipboard History Manager");
+    trayIcon->setToolTip("Clipboard History Manager - Running in background");
     
     QMenu *trayMenu = new QMenu(this);
     
@@ -219,8 +331,8 @@ void MainWindow::setupSystemTray()
     
     trayMenu->addSeparator();
     
-    QAction *quitAction = trayMenu->addAction("Quit");
-    connect(quitAction, &QAction::triggered, qApp, &QApplication::quit);
+    QAction *infoAction = trayMenu->addAction("Running... (Use Task Manager to exit)");
+    infoAction->setEnabled(false);
     
     trayIcon->setContextMenu(trayMenu);
     trayIcon->show();
@@ -272,6 +384,7 @@ void MainWindow::addToHistory(const QString &text)
         history.pop_back();
     }
     
+    historyModified = true;
     updateHistoryDisplay();
 }
 
@@ -291,6 +404,7 @@ void MainWindow::addImageToHistory(const QPixmap &image)
         history.pop_back();
     }
     
+    historyModified = true;
     updateHistoryDisplay();
 }
 
@@ -382,6 +496,7 @@ void MainWindow::deleteSelectedItem()
     int index = item->data(Qt::UserRole).toInt();
     if (index >= 0 && index < static_cast<int>(history.size())) {
         history.erase(history.begin() + index);
+        historyModified = true;
         updateHistoryDisplay();
         
         copyBtn->setEnabled(false);
@@ -402,7 +517,9 @@ void MainWindow::clearHistory()
     
     if (reply == QMessageBox::Yes) {
         history.clear();
+        historyModified = true;
         updateHistoryDisplay();
+        saveHistory(); // Save immediately after clearing
         copyBtn->setEnabled(false);
         deleteBtn->setEnabled(false);
     }
@@ -421,14 +538,15 @@ void MainWindow::toggleWindow()
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-    if (trayIcon->isVisible()) {
-        hide();
-        trayIcon->showMessage("Clipboard Manager",
-                              "Application minimized to tray. Double-click to restore.",
-                              QSystemTrayIcon::Information,
-                              2000);
-        event->ignore();
-    } else {
-        event->accept();
-    }
+    // Always hide to tray, never actually close
+    hide();
+    
+    // Save history when minimizing to tray
+    saveHistory();
+    
+    trayIcon->showMessage("Clipboard Manager",
+                          "Running in background. Use Task Manager to exit completely.",
+                          QSystemTrayIcon::Information,
+                          2000);
+    event->ignore();
 }

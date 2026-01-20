@@ -10,6 +10,7 @@
 #include <QSystemTrayIcon>
 #include <QMenu>
 #include <QDateTime>
+#include <QTimer>
 #include <deque>
 
 QT_BEGIN_NAMESPACE
@@ -43,6 +44,7 @@ private slots:
     void deleteSelectedItem();
     void copySelectedItem();
     void toggleWindow();
+    void saveHistory();
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -54,6 +56,9 @@ private:
     void addToHistory(const QString &text);
     void addImageToHistory(const QPixmap &image);
     QString truncateText(const QString &text, int maxLength = 80);
+    void loadHistory();
+    QString getDataFilePath();
+    QString getImageStoragePath();
 
     Ui::MainWindow *ui;
     QClipboard *clipboard;
@@ -64,7 +69,9 @@ private:
     QPushButton *deleteBtn;
     QPushButton *copyBtn;
     QSystemTrayIcon *trayIcon;
+    QTimer *saveTimer;
     bool ignoreNextChange;
+    bool historyModified;
 };
 
 #endif // MAINWINDOW_H

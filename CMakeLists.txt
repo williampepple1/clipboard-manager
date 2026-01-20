@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(clipboard-manager VERSION 0.1 LANGUAGES CXX)
+project(clipboard-manager VERSION 2.0 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
